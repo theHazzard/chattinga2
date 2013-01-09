@@ -7,16 +7,24 @@ var express = require('express')
   , routes = require('./routes')
   , user = require('./routes/user')
   , UsrModels = require('./models/UserModel')
-  , http = require('http')
+  , ChatModels = require('./models/ChatModel') 
+  , app = express()
+  , io = require('socket.io')
+  , http = require('http').createServer(app)
+  , sio = io.listen(http)
   , path = require('path')
   , passport = require('passport')
   , FacebookStrategy = require('passport-facebook').Strategy
   , TwitterStrategy = require('passport-twitter').Strategy
   , mongoose = require('mongoose')
-  , config = require('./config');
+  , config = require('./config')
+  , MemoryStore = express.session.MemoryStore
+  , sessionStore = new MemoryStore()
+  , Session = express.session.Session
+  , cookie = require('express/node_modules/cookie')
+  , parseSignedCookie = require('express/node_modules/connect').utils.parseSignedCookies;
 
 console.log(UsrModels);
-var app = express();
 mongoose.connect('localhost', 'test');
 
 passport.serializeUser(function(user, done) {
@@ -26,6 +34,41 @@ passport.serializeUser(function(user, done) {
 passport.deserializeUser(function(id, done) {
   UsrModels.Usuario.findById(id, function(err, user) {
     done(err, user);
+  });
+});
+
+sio.set('authorization', function (data, accept) {
+   if (data.headers.cookie) {
+        var cki = parseSignedCookie(cookie.parse(data.headers.cookie),'M1Sup3rS3cretP@ssw0rd');
+        data.sessionID = cki['express.sid'];
+        sessionStore.get(data.sessionID, function (err, session) {
+            if (session){
+              UsrModels.Usuario.findById(session['passport'].user, function(err, user) {
+                if (err){ accept('Error', false); };
+                if (user){
+                  data.user = user
+                  return accept(null, true);
+                } else {
+                  return accept('No se encontro el usuario', false);
+                };
+              });
+            };
+        });
+    } else {
+       return accept('No cookie transmitted.', false);
+    }
+});
+
+sio.sockets.on('connection', function (socket) {
+  ChatModels.Chat.Ultimos20(function (comments){
+    console.log(comments);
+    socket.emit('history',comments);
+  });
+  socket.on('mensaje',function(message){
+    ChatModels.Chat.Crear(socket.handshake.user._id, message, function (cht){
+      console.log(cht);
+      sio.sockets.emit('nMensaje',{nombre: socket.handshake.user.NombreUsuario, picture: socket.handshake.user.Foto, mensaje: cht});
+    });
   });
 });
 
@@ -63,8 +106,10 @@ app.configure(function(){
   app.use(express.logger('dev'));
   app.use(express.bodyParser());
   app.use(express.methodOverride());
-  app.use(express.cookieParser('your secret here'));
-  app.use(express.session());
+  app.use(express.cookieParser('M1Sup3rS3cretP@ssw0rd'));
+  app.use(express.session({store: sessionStore
+        , secret: 'M1Sup3rS3cretP@ssw0rd'
+        , key: 'express.sid'}));
   app.use(passport.initialize());
   app.use(passport.session());
   app.use(app.router);
@@ -92,7 +137,11 @@ app.get('/auth/facebook/callback',
   passport.authenticate('facebook', { successRedirect: '/',
                                       failureRedirect: '/login' }));
 //////////////////////////////
+app.get('/logout', function(req, res){
+  req.logout();
+  res.redirect('/');
+});
 
-http.createServer(app).listen(app.get('port'), function(){
+http.listen(app.get('port'), function(){
   console.log("Express server listening on port " + app.get('port'));
 });
