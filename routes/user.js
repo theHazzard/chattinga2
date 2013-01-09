@@ -3,6 +3,6 @@
  * GET users listing.
  */
 
-exports.list = function(req, res){
-  res.send("respond with a resource");
+exports.findById = function(req, res){
+  res.send({id:req.params.id, name: "The Name", description: "description"});
 };
