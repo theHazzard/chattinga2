@@ -1,4 +1,5 @@
 var mongo = require('mongoose'), pctr;
+var Chat = require('./ChatModel').Chat;
 
 
 var UserModel = mongo.Schema({
@@ -7,7 +8,8 @@ var UserModel = mongo.Schema({
 	NombreUsuario: { type: String, required: true },
 	Foto: { type: String, required: true },
 	FechaCreacion: { type: Date, default: Date.now },
-	UltimoLogin: Date
+	UltimoLogin: Date,
+	_chats: [{ type : mongo.Schema.Types.ObjectId, ref: 'Chat'}]
 });
 
 UserModel.statics.findOrCreate = function (User,cb){
@@ -19,7 +21,7 @@ UserModel.statics.findOrCreate = function (User,cb){
 				pctr = 'https://graph.facebook.com/'+User.id+'/picture?width=25&height=25';
 			} else {
 				pctr = User._json.profile_image_url;
-			};
+			}
 			este.create({
 				RedSocialId: User.id,
 				RedSocialNombre: User.provider,

@@ -65,9 +65,9 @@ sio.sockets.on('connection', function (socket) {
     socket.emit('history',comments);
   });
   socket.on('mensaje',function(message){
-    ChatModels.Chat.Crear(socket.handshake.user._id, message, function (cht){
+    ChatModels.Chat.Crear(socket.handshake.user, message, function (cht){
       console.log(cht);
-      sio.sockets.emit('nMensaje',{nombre: socket.handshake.user.NombreUsuario, picture: socket.handshake.user.Foto, mensaje: cht});
+      sio.sockets.emit('nMensaje',{nombre: socket.handshake.user.NombreUsuario, picture: socket.handshake.user.Foto, mensaje: cht.mensaje});
     });
   });
 });

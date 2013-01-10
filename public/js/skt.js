@@ -8,7 +8,7 @@ var load = function() {
 		var history = '';
 		for(var c in data)
 		{	
-			history = '<article class="msg"><section class="foto"><img src="'+ data[c].pic +'" /></section><section class="nombre">'+data[c].userName+'</section><section class="mensaje">'+data[c].comentario+'</section></article>' + history;
+			history = '<article class="msg"><section class="foto"><img src="'+ data[c].Foto +'" /></section><section class="nombre">'+data[c].Usuario+'</section><section class="mensaje">'+data[c].Chat+'</section></article>' + history;
 		};
 		$('#messages').append(history);
 		$('#messages').animate({ scrollTop: 60000 }, 'slow');
@@ -20,7 +20,7 @@ var load = function() {
 	$('#say input').keypress(function (e) {
 	    if(e.which == 13) {
 	    	var message = $('#say input').val();
-	    	socket.emit('mensaje',{m: message});
+	    	socket.emit('mensaje',message);
 	    	$('#say input').attr("value","");
 	    }
 	});
